@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chatbot</title>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static', filename='style.css')}}"
+    />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="chat-header">
+        <h1>StreamerBot---Assistant-virtuel-pour-Streamer-DashboardV2</h1>
+        <button id="quit" class="btn btn-danger">Quitter</button>
+      </div>
+      <div class="chat-body">
+        <div id="chatbox">
+          <div class="botText">
+            <span>Bonjour, je suis votre bot.</span>
+          </div>
+        </div>
+      </div>
+      <div class="chat-footer">
+        <form>
+          <input
+            id="text"
+            type="text"
+            name="msg"
+            placeholder="Message"
+            class="form-control"
+          />
+          <button type="submit" id="send" class="btn btn-warning">
+            Envoyer
+          </button>
+        </form>
+        <div id="feedback" style="display: none">
+          <button id="correct" class="btn btn-success">Correct</button>
+          <button id="incorrect" class="btn btn-danger">Incorrect</button>
+          <div id="expected-response" style="display: none">
+            <input
+              id="expected-text"
+              type="text"
+              name="expected"
+              placeholder="Réponse attendue"
+              class="form-control"
+            />
+            <button id="submit-expected" class="btn btn-primary">
+              Soumettre
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      $(document).ready(function () {
+        $("form").on("submit", function (event) {
+          var rawText = $("#text").val().trim();
+          if (rawText === "") {
+            alert("Le champ de texte ne doit pas être vide.");
+            return false;
+          }
+          var userHtml =
+            '<div class="userText"><span>' + rawText + "</span></div>";
+          $("#text").val("");
+          $("#chatbox").append(userHtml);
+          $(".chat-body").scrollTop($(".chat-body")[0].scrollHeight);
+          $.ajax({
+            data: {
+              msg: rawText,
+            },
+            type: "POST",
+            url: "/get",
+          }).done(function (data) {
+            var botHtml =
+              '<div class="botText"><span>' + data + "</span></div>";
+            $("#chatbox").append($.parseHTML(botHtml));
+            $(".chat-body").scrollTop($(".chat-body")[0].scrollHeight);
+            $("#feedback").show();
+          });
+          event.preventDefault();
+        });
+
+        $("#correct").on("click", function () {
+          $("#feedback").hide();
+        });
+
+        $("#incorrect").on("click", function () {
+          $("#expected-response").show();
+        });
+
+        $("#submit-expected").on("click", function () {
+          var expectedText = $("#expected-text").val().trim();
+          if (expectedText === "") {
+            alert("Le champ de réponse attendue ne doit pas être vide.");
+            return false;
+          }
+          var question = $(".userText").last().text();
+          $.ajax({
+            data: {
+              question: question,
+              expected: expectedText,
+            },
+            type: "POST",
+            url: "/feedback",
+          }).done(function () {
+            $("#expected-response").hide();
+            $("#feedback").hide();
+          });
+        });
+
+        $("#quit").on("click", function () {
+          $.ajax({
+            type: "POST",
+            url: "/quit",
+          }).done(function () {
+            window.location.href = "/";
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
